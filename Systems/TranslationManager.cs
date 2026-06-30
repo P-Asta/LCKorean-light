@@ -53,6 +53,9 @@ namespace LCKR.Patches
             "Tip.txt",
             "UnlockableItem.txt",
         };
+
+        private const string DefaultTranslationMetadataFileName = ".lckr-default-translation-metadata";
+
         private static string[] translationFileLink =
         {
             "https://drive.google.com/uc?export=download&id=1feKiEAyQH0174MPwhyQf3FuWk0WzfTe8", //ColdOpen
@@ -79,35 +82,99 @@ namespace LCKR.Patches
             if (isDownloadingFiles)
                 return;
 
-            isDownloadingFiles = true;
-
             if (string.IsNullOrEmpty(defTranslationPath))
                 defTranslationPath = Plugin.DefTranslationFilePath;
 
             if (!Directory.Exists(defTranslationPath))
                 Directory.CreateDirectory(defTranslationPath);
 
+            isDownloadingFiles = true;
             downloadedFileCount = 0;
-            Plugin.mls.LogInfo("기본 번역 파일을 다운로드하는 중...");
+            downloadingFileText = $"<size=14>Google Drive 번역 파일 확인 중... (0/{TranslationFiles.Length})</size>";
+            Plugin.mls.LogInfo("Google Drive 기본 번역 파일 수정일을 확인하는 중...");
 
             try
             {
+                Dictionary<string, string> metadata = LoadDefaultTranslationMetadata();
+                List<TranslationDownloadInfo> filesToDownload = new List<TranslationDownloadInfo>();
+
                 for (int i = 0; i < translationFileLink.Length; i++)
                 {
                     string url = translationFileLink[i];
                     string fileName = TranslationFiles[i];
+                    string filePath = Path.Combine(defTranslationPath, fileName);
+                    string remoteLastModified = await GetRemoteLastModifiedAsync(url);
 
-                    await DownloadSingleFileAsync(fileName, url);
+                    bool hasLocalFile = File.Exists(filePath);
+                    bool hasStoredLastModified = metadata.TryGetValue(fileName, out string storedLastModified);
+                    bool remoteDateChanged = !string.IsNullOrEmpty(remoteLastModified)
+                        && (!hasStoredLastModified || storedLastModified != remoteLastModified);
+
+                    if (!hasLocalFile || remoteDateChanged || string.IsNullOrEmpty(remoteLastModified))
+                    {
+                        filesToDownload.Add(new TranslationDownloadInfo(fileName, url, remoteLastModified));
+                    }
+                    else
+                    {
+                        downloadedFileCount++;
+                        downloadingFileText = $"<size=14>Google Drive 번역 파일 확인 중... {GetDownloadProgressText()}</size>";
+                    }
                 }
+
+                if (filesToDownload.Count == 0)
+                {
+                    Plugin.mls.LogInfo("Google Drive 기본 번역 파일이 최신 상태라 다운로드를 건너뜁니다.");
+                    return;
+                }
+
+                bool downloadedAllRequestedFiles = true;
+                downloadedFileCount = 0;
+                downloadingFileText = $"<size=14>변경된 번역 파일 다운로드 준비 중... (0/{filesToDownload.Count})</size>";
+                Plugin.mls.LogInfo($"변경되었거나 누락된 기본 번역 파일 {filesToDownload.Count}개를 다운로드하는 중...");
+
+                foreach (TranslationDownloadInfo file in filesToDownload)
+                {
+                    if (await DownloadSingleFileAsync(file.FileName, file.Url, filesToDownload.Count))
+                    {
+                        if (!string.IsNullOrEmpty(file.LastModified))
+                            metadata[file.FileName] = file.LastModified;
+                    }
+                    else
+                    {
+                        downloadedAllRequestedFiles = false;
+                    }
+                }
+
+                if (downloadedAllRequestedFiles)
+                    SaveDefaultTranslationMetadata(metadata);
             }
             finally
             {
                 isDownloadingFiles = false;
-                Plugin.mls.LogInfo("번역 파일 다운로드가 완료되었습니다.");
+                Plugin.mls.LogInfo("기본 번역 파일 다운로드가 완료되었습니다.");
             }
         }
 
-        private static async Task DownloadSingleFileAsync(string fileName, string url)
+        private static async Task<string> GetRemoteLastModifiedAsync(string url)
+        {
+            using (UnityWebRequest request = UnityWebRequest.Head(url))
+            {
+                var op = request.SendWebRequest();
+
+                while (!op.isDone)
+                    await Task.Yield();
+
+                if (request.result != UnityWebRequest.Result.Success)
+                {
+                    Plugin.mls.LogWarning($"번역 파일 수정일 확인 실패: {url}\n{request.error}");
+                    return "";
+                }
+
+                return request.GetResponseHeader("Last-Modified") ?? "";
+            }
+        }
+
+        private static async Task<bool> DownloadSingleFileAsync(string fileName, string url, int totalDownloadCount)
         {
             using (UnityWebRequest request = UnityWebRequest.Get(url))
             {
@@ -121,7 +188,7 @@ namespace LCKR.Patches
                     Plugin.mls.LogError(
                         $"번역 기본값 파일을 다운로드하는데 실패했습니다: {url}\n{request.error}"
                     );
-                    return;
+                    return false;
                 }
 
                 try
@@ -131,21 +198,25 @@ namespace LCKR.Patches
 
                     downloadedFileCount++;
 
-                    downloadingFileText = $"<size=14>다운로드하는 중: {fileName} {GetDownloadProgressText()}</size>";
+                    downloadingFileText = $"<size=14>다운로드하는 중: {fileName} {GetDownloadProgressText(totalDownloadCount)}</size>";
                     Plugin.mls.LogInfo(
-                        $"번역 파일을 다운로드하는 중: {fileName}, {GetDownloadProgressText()}"
+                        $"번역 파일을 다운로드하는 중: {fileName}, {GetDownloadProgressText(totalDownloadCount)}"
                     );
+                    return true;
                 }
                 catch (Exception e)
                 {
                     Plugin.mls.LogError($"파일 저장 실패: {defTranslationPath}\n{e}");
+                    return false;
                 }
             }
         }
 
-        private static string GetDownloadProgressText(bool withPercent = false)
+        private static string GetDownloadProgressText(int totalCount = -1, bool withPercent = false)
         {
-            int totalCount = TranslationFiles.Length;
+            if (totalCount < 0)
+                totalCount = TranslationFiles.Length;
+
             int currentCount = downloadedFileCount;
 
             int percent = totalCount <= 0
@@ -262,7 +333,72 @@ namespace LCKR.Patches
 
             return missingFiles.Count == 0;
         }
-        
+
+        private static Dictionary<string, string> LoadDefaultTranslationMetadata()
+        {
+            Dictionary<string, string> metadata = new Dictionary<string, string>();
+            string metadataPath = Path.Combine(defTranslationPath, DefaultTranslationMetadataFileName);
+
+            if (!File.Exists(metadataPath))
+                return metadata;
+
+            try
+            {
+                foreach (string line in File.ReadAllLines(metadataPath))
+                {
+                    int splitIndex = line.IndexOf('=');
+                    if (splitIndex <= 0)
+                        continue;
+
+                    string fileName = line.Substring(0, splitIndex).Trim();
+                    string lastModified = line.Substring(splitIndex + 1).Trim();
+
+                    if (!string.IsNullOrEmpty(fileName) && !metadata.ContainsKey(fileName))
+                        metadata.Add(fileName, lastModified);
+                }
+            }
+            catch (Exception e)
+            {
+                Plugin.mls.LogWarning($"기본 번역 메타데이터 파일을 읽을 수 없습니다: {metadataPath}\n{e}");
+            }
+
+            return metadata;
+        }
+
+        private static void SaveDefaultTranslationMetadata(Dictionary<string, string> metadata)
+        {
+            try
+            {
+                List<string> lines = new List<string>();
+
+                foreach (string fileName in TranslationFiles)
+                {
+                    if (metadata.TryGetValue(fileName, out string lastModified))
+                        lines.Add($"{fileName}={lastModified}");
+                }
+
+                File.WriteAllLines(Path.Combine(defTranslationPath, DefaultTranslationMetadataFileName), lines.ToArray());
+            }
+            catch (Exception e)
+            {
+                Plugin.mls.LogWarning($"기본 번역 메타데이터 파일을 저장할 수 없습니다: {defTranslationPath}\n{e}");
+            }
+        }
+
+        private struct TranslationDownloadInfo
+        {
+            public readonly string FileName;
+            public readonly string Url;
+            public readonly string LastModified;
+
+            public TranslationDownloadInfo(string fileName, string url, string lastModified)
+            {
+                FileName = fileName;
+                Url = url;
+                LastModified = lastModified;
+            }
+        }
+
         private static void OverwriteTranslationsWithDefaults()
         {
             MenuManager menuManager = FindObjectOfType<MenuManager>();

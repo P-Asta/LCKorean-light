@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>LCKR</AssemblyName>
+    <Description>LCKorean light</Description>
+    <Version>2.1.1</Version>
+    <LangVersion>latest</LangVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <RestoreAdditionalProjectSources>
+      https://api.nuget.org/v3/index.json;
+      https://nuget.bepinex.dev/v3/index.json
+    </RestoreAdditionalProjectSources>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <BepInExCore Condition="'$(BepInExCore)' == ''">C:\Users\pAsta\AppData\Roaming\com.kesomannen.gale\cache\BepInEx-BepInExPack\5.4.2305\BepInEx\core</BepInExCore>
+    <Managed Condition="'$(Managed)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed</Managed>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.2" PrivateAssets="all" />
+    <PackageReference Include="BepInEx.Core" Version="5.*" />
+    <PackageReference Include="BepInEx.PluginInfoProps" Version="2.1.0" />
+    <PackageReference Include="UnityEngine.Modules" Version="6000.0.5" IncludeAssets="compile" />
+
+    <Reference Include="0Harmony" HintPath="$(BepInExCore)\0Harmony.dll" Publicize="true" />
+    <Reference Include="BepInEx" HintPath="$(BepInExCore)\BepInEx.dll" Publicize="true" />
+    <Reference Include="BepInEx.Harmony" HintPath="$(BepInExCore)\BepInEx.Harmony.dll" Publicize="true" />
+
+    <Reference Include="Assembly-CSharp" HintPath="$(Managed)\Assembly-CSharp.dll" Publicize="true" />
+    <Reference Include="Assembly-CSharp-firstpass" HintPath="$(Managed)\Assembly-CSharp-firstpass.dll" Publicize="true" />
+    <Reference Include="Unity.Netcode.Runtime" HintPath="$(Managed)\Unity.Netcode.Runtime.dll" Publicize="true" />
+    <Reference Include="Unity.TextMeshPro" HintPath="$(Managed)\Unity.TextMeshPro.dll" Publicize="true" />
+    <Reference Include="UnityEngine.UI" HintPath="$(Managed)\UnityEngine.UI.dll" Publicize="true" />
+    <Reference Include="UnityEngine.VideoModule" HintPath="$(Managed)\UnityEngine.VideoModule.dll" Publicize="true" />
+    <Reference Include="UnityEngine.UnityWebRequestModule" HintPath="$(Managed)\UnityEngine.UnityWebRequestModule.dll" Publicize="true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
+  </ItemGroup>
+</Project>
