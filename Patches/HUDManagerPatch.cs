@@ -134,15 +134,11 @@ namespace LCKR.Patches
                         int rounded = Mathf.RoundToInt(c);
                         return rounded.ToString();
                     }).Replace("°F", "°C");
-                    ___statusEffectText.text = resultText;
                 }
-                
-                ___statusEffectText.text = 
-                    ___statusEffectText.text.Replace("HIGH FEVER DETECTED!", TranslationManager.GetArrayTranslation("HUD", "HighFever"));
-                ___statusEffectText.text = 
-                    ___statusEffectText.text.Replace("REACHING", TranslationManager.GetArrayTranslation("HUD", "HighFever", 1));
-                
-                ___statusEffectText.text = resultText;
+
+                ___statusEffectText.text = resultText
+                    .Replace("HIGH FEVER DETECTED!", TranslationManager.GetArrayTranslation("HUD", "HighFever"))
+                    .Replace("REACHING", TranslationManager.GetArrayTranslation("HUD", "HighFever", 1));
             }else if (statusEffect.Contains("HIGH FEVER DETECTED!!!"))
             {
                 ___statusEffectText.text =
