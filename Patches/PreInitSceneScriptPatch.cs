@@ -20,12 +20,12 @@ namespace LCKR.Patches
 
         [HarmonyPostfix]
         [HarmonyPatch("SkipToFinalSetting")]
-        private static void SkipToFinalSetting_Postfix(PreInitSceneScript __instance, ref TextMeshProUGUI ___headerText)
+        private static void SkipToFinalSetting_Postfix(ref TextMeshProUGUI ___headerText)
         {
-            LoadingManager loadingManager = __instance.gameObject.AddComponent<LoadingManager>();
-            loadingManager.text = ___headerText;
-            loadingManager.buttons = GameObject.Find("LANOrOnline");
-            ___headerText.text = "실행 모드";
+            if (___headerText != null)
+            {
+                ___headerText.text = "실행 모드";
+            }
         }
     }
 }
