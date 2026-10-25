@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <AssemblyName>LCKR</AssemblyName>
+    <AssemblyName>LCKRL</AssemblyName>
     <Description>LCKorean light</Description>
     <Version>2.1.1</Version>
     <LangVersion>latest</LangVersion>

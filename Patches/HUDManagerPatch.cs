@@ -107,9 +107,19 @@ namespace LCKR.Patches
                 ___statusEffectText.text = TranslationManager.GetArrayTranslation("HUD", "OxygenLow");
             }else if (statusEffect.Contains("HEALTH RISK!"))
             {
-                ___statusEffectText.text = TranslationManager.GetArrayTranslation("HUD", "HealthRisk") + "\n"
-                    + TranslationManager.GetArrayTranslation("HUD", "HealthRisk", 1) + "\n"
-                + TranslationManager.GetArrayTranslation("HUD", "HealthRisk", 2);
+                string translatedStatus = statusEffect
+                    .Replace("HEALTH RISK!", TranslationManager.GetArrayTranslation("HUD", "HealthRisk"))
+                    .Replace("Air filter overwhelmed by particulates;",
+                        TranslationManager.GetArrayTranslation("HUD", "HealthRisk", 1) + " "
+                        + TranslationManager.GetArrayTranslation("HUD", "HealthRisk", 2) + ".")
+                    .Replace("Air filter overwhelmed by particulates",
+                        TranslationManager.GetArrayTranslation("HUD", "HealthRisk", 1) + " "
+                        + TranslationManager.GetArrayTranslation("HUD", "HealthRisk", 2))
+                    .Replace("Filter quality:", "필터 품질:")
+                    .Replace("Filter inoperative!", "필터가 작동하지 않습니다!");
+
+                // Keep the dynamic filter quality or failure status appended by CadaverGrowthAI.
+                ___statusEffectText.text = translatedStatus;
             }else if (statusEffect.Contains("HIGH FEVER DETECTED!") && statusEffect.Contains("REACHING"))
             {
                 string input = ___statusEffectText.text;
@@ -124,15 +134,11 @@ namespace LCKR.Patches
                         int rounded = Mathf.RoundToInt(c);
                         return rounded.ToString();
                     }).Replace("°F", "°C");
-                    ___statusEffectText.text = resultText;
                 }
-                
-                ___statusEffectText.text = 
-                    ___statusEffectText.text.Replace("HIGH FEVER DETECTED!", TranslationManager.GetArrayTranslation("HUD", "HighFever"));
-                ___statusEffectText.text = 
-                    ___statusEffectText.text.Replace("REACHING", TranslationManager.GetArrayTranslation("HUD", "HighFever", 1));
-                
-                ___statusEffectText.text = resultText;
+
+                ___statusEffectText.text = resultText
+                    .Replace("HIGH FEVER DETECTED!", TranslationManager.GetArrayTranslation("HUD", "HighFever"))
+                    .Replace("REACHING", TranslationManager.GetArrayTranslation("HUD", "HighFever", 1));
             }else if (statusEffect.Contains("HIGH FEVER DETECTED!!!"))
             {
                 ___statusEffectText.text =

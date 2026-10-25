@@ -14,7 +14,7 @@ namespace LCKR
     [BepInPlugin(modGUID, modName, modVersion)]
     public class Plugin : BaseUnityPlugin
     {
-        private const string modGUID = "Piggy.LCKR";
+        private const string modGUID = "asta.light.LCKR";
         private const string modName = "LCKR";
         public const string modVersion = "2.1.1";
         public static string modVerType = "b";
@@ -74,8 +74,8 @@ namespace LCKR
                 Instance = this;
             }
             PluginDirectory = Info.Location;
-            TranslationFilePath = Config.ConfigFilePath.Replace("Piggy.LCKR.cfg", "") + "\\LCKR_Translation";
-            DefTranslationFilePath =  Config.ConfigFilePath.Replace("Piggy.LCKR.cfg", "") + "LCKR_Translation\\Default";
+            TranslationFilePath = Config.ConfigFilePath.Replace("asta.light.LCKR.cfg", "") + "\\LCKR_Translation";
+            DefTranslationFilePath =  Config.ConfigFilePath.Replace("asta.light.LCKR.cfg", "") + "LCKR_Translation\\Default";
 
             mls = BepInEx.Logging.Logger.CreateLogSource(modGUID);
             LoadAssets();
